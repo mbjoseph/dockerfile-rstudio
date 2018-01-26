@@ -1,2 +1,2 @@
-install.packages('ismev')
+install.packages(c('ismev', 'fExtremes'))
 

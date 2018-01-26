@@ -1,0 +1,86 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+# load some packages
+library(tidyverse)
+library(ismev)
+library(fExtremes)
+```
+
+
+# Introduction to extreme value analysis in R
+
+We are going to jump right in with an example to illustrate a classical approach to understanding **block maxima**: maximum values within some block (e.g., a year), where we have multiple blocks.
+
+## Annual maximum sea levels at Port Pirie, South Australia
+
+We are going to work with yearly maximum sea levels recorded at Port Pirie, South Australia over a 64 year record from 1923 to 1987. 
+Let's start off by having a look at the data. 
+
+```{r}
+data(portpirie)
+str(portpirie)
+```
+
+So, we are working with a `data.frame` object, with two columns: `Year` (a number) and `SeaLevel` (also a number). 
+What do the annual maxima look like over time? 
+
+```{r}
+ggplot(portpirie, aes(Year, SeaLevel)) +
+  geom_line() +
+  geom_point()
+```
+
+Let's say that we wanted to know the probability of having an annual maximum over 4.5. 
+What's a simple way to estimate this from the data?
+
+```{r}
+# Your code here - find the probability of an annual maximum > 4.5
+```
+
+
+Now, let's ask a harder question: what's the probability of having an annual maximum over 5?
+If we only considered the historical record, a naive approach would be to conclude that since there are no observations over 5, that the probability is 0. 
+Clearly, this answer would not be sufficient if we were gambling the fate of an oceanside community on our estimate. 
+
+Let's get a little more formal with setting up this problem. 
+If we define $X$ as an annual maximum, what we want to know is the probability that $X$ is greater than 5:
+
+$$\text{Pr}(X > 5) = ?$$
+
+You might remember from statistics that if we know the distribution of a random variable, we can calculate the probability that the random variable takes on a value greater than some value by computing the area under the distribution curve to the right of some value (cue traumatic flashbacks to introductory statistics course), a common example being the tail area probability of a standard normal distribution: 
+
+```{r}
+q <- qnorm(.975)
+xseq <- seq(q, 4, 0.01)
+x <- c(q, xseq, 4)
+y <- c(0, dnorm(xseq), 0) 
+curve(dnorm(x), xlim=c(-4, 4), main='Standard normal distribution') 
+polygon(x, y, col = 'skyblue')
+text(3, 
+     .05, 
+     labels = paste0('Area right of ', 
+                     round(q, 3), 
+                     ':\n', 
+                     round(1 - pnorm(q), 3)))
+abline(v = q, lty = 2)
+```
+
+For the standard normal distribution, $\text{Pr}(x \ge 1.96) \approx 0.025$
+If we knew the distribution of sea level maxima, we could calculate this tail area probability to get the answer to our original question ($\text{Pr}(X > 5)$). 
+
+Unfortunately, we don't know the distribution of the annual sea level maxima. 
+However, we can use the **generalized extreme value (GEV) distribution** as an approximation. 
+The GEV is a good guess for the distribution based on some theoretical results, and has three parameters: location $\mu$, scale $\sigma$ (which must be $>0$), and shape $\xi$. 
+
+The GEV distribution is interesting in part because it can do some funky things depending on the parameter values. 
+For instance, it can be totally unbounded, generating values along the entire real line: 
+
+```{r}
+curve(dgev, xlim = c(-10, 10), ylab = 'GEV density')
+title(expression(list(xi == 1, mu == 0, sigma == 1)))
+```
+
